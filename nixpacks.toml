@@ -1,6 +1,8 @@
 [phases.setup]
 nixPkgs = ["chromium"]
 
-[variables]
-PUPPETEER_EXECUTABLE_PATH = "/run/current-system/sw/bin/chromium"
-PUPPETEER_SKIP_DOWNLOAD = "true"
+[phases.build]
+cmds = ["npm install"]
+
+[start]
+cmd = "PUPPETEER_EXECUTABLE_PATH=$(which chromium) npm start"
