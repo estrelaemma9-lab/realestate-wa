@@ -1,2 +1,5 @@
 [phases.setup]
-nixPkgs = ["chromium", "nodejs_20"]
+nixPkgs = ["chromium"]
+
+[start]
+cmd = "find / -name 'chromium' -type f 2>/dev/null | head -5 && npm start"
