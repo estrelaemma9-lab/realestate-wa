@@ -35,7 +35,12 @@ async function initClient(agency) {
     authStrategy: new LocalAuth({ clientId: agencyId }),
     puppeteer: {
       headless: true,
-      args: [
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || 
+  require('fs').existsSync('/usr/bin/chromium-browser') ? '/usr/bin/chromium-browser' :
+  require('fs').existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' :
+  require('fs').existsSync('/nix/store/chromium/bin/chromium') ? '/nix/store/chromium/bin/chromium' :
+  undefined,
+	args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
