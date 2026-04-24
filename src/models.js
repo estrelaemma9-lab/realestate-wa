@@ -1,6 +1,15 @@
 const mongoose = require('mongoose');
 
 // ──────────────────────────────────────────────
+// SUPER ADMIN MODEL
+// ──────────────────────────────────────────────
+const superAdminSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  createdAt:{ type: Date, default: Date.now }
+});
+
+// ──────────────────────────────────────────────
 // AGENCY MODEL
 // ──────────────────────────────────────────────
 const agencySchema = new mongoose.Schema({
@@ -15,8 +24,24 @@ const agencySchema = new mongoose.Schema({
   currency:    { type: String, default: 'PKR' },
   greetingMsg: { type: String, default: 'Welcome to our Real Estate Service! How can we help you today?' },
   primaryColor:{ type: String, default: '#2563eb' },
-  isActive:    { type: Boolean, default: true },
+
+  // ── APPROVAL & STATUS ──
+  isActive:    { type: Boolean, default: false },   // false until approved
+  isApproved:  { type: Boolean, default: false },   // super admin approves
+  isBlocked:   { type: Boolean, default: false },   // super admin can block
+
+  // ── PAYMENT ──
+  isPaid:      { type: Boolean, default: false },
+  paymentDate: { type: Date },
+  paymentRef:  { type: String },
+  paymentAmount:{ type: Number },
+
+  // ── PLAN & EXPIRY ──
   plan:        { type: String, enum: ['trial', 'basic', 'pro'], default: 'trial' },
+  expiryDate:  { type: Date },
+  trialDays:   { type: Number, default: 7 },
+
+  // ── STATS ──
   messageCount:{ type: Number, default: 0 },
   createdAt:   { type: Date, default: Date.now }
 });
@@ -76,7 +101,6 @@ propertySchema.virtual('mainImage').get(function () {
   const main = this.images.find(i => i.isMain);
   return main ? main.url : (this.images[0] ? this.images[0].url : null);
 });
-
 propertySchema.set('toJSON', { virtuals: true });
 propertySchema.set('toObject', { virtuals: true });
 
@@ -133,7 +157,7 @@ const faqSchema = new mongoose.Schema({
 });
 
 // ──────────────────────────────────────────────
-// CONVERSATION SESSION MODEL
+// SESSION MODEL
 // ──────────────────────────────────────────────
 const sessionSchema = new mongoose.Schema({
   agencyId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Agency', required: true },
@@ -144,7 +168,6 @@ const sessionSchema = new mongoose.Schema({
   lastActive:{ type: Date, default: Date.now },
   createdAt: { type: Date, default: Date.now }
 });
-
 sessionSchema.index({ agencyId: 1, phone: 1 }, { unique: true });
 
 // ──────────────────────────────────────────────
@@ -158,12 +181,12 @@ const messageLogSchema = new mongoose.Schema({
   type:      { type: String, default: 'text' },
   timestamp: { type: Date, default: Date.now }
 });
-
 messageLogSchema.index({ agencyId: 1, phone: 1, timestamp: -1 });
 
 // ──────────────────────────────────────────────
 // EXPORTS
 // ──────────────────────────────────────────────
+const SuperAdmin  = mongoose.model('SuperAdmin', superAdminSchema);
 const Agency      = mongoose.model('Agency', agencySchema);
 const Agent       = mongoose.model('Agent', agentSchema);
 const Property    = mongoose.model('Property', propertySchema);
@@ -173,4 +196,4 @@ const FAQ         = mongoose.model('FAQ', faqSchema);
 const Session     = mongoose.model('Session', sessionSchema);
 const MessageLog  = mongoose.model('MessageLog', messageLogSchema);
 
-module.exports = { Agency, Agent, Property, Lead, Meeting, FAQ, Session, MessageLog };
+module.exports = { SuperAdmin, Agency, Agent, Property, Lead, Meeting, FAQ, Session, MessageLog };
