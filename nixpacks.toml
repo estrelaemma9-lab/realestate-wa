@@ -4,5 +4,8 @@ nixPkgs = ["chromium"]
 [phases.install]
 cmds = ["npm install"]
 
+[phases.build]
+cmds = ["echo PUPPETEER_EXECUTABLE_PATH=$(readlink -f $(which chromium)) >> .env"]
+
 [start]
 cmd = "npm start"
