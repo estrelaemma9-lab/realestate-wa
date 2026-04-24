@@ -4,22 +4,21 @@ const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const { execSync } = require('child_process');
 
 function getChromePath() {
-  const paths = [
-    '/run/current-system/sw/bin/chromium',
-    '/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
-    '/usr/bin/google-chrome',
-    '/usr/bin/google-chrome-stable',
-    '/snap/bin/chromium'
-  ];
-  for (const p of paths) {
-    try {
-      require('fs').accessSync(p);
-      return p;
-    } catch (_) {}
-  }
-  try { return require('child_process').execSync('which chromium').toString().trim(); } catch(_) {}
+  try {
+    const real = require('child_process')
+      .execSync('readlink -f $(which chromium)', { shell: true })
+      .toString().trim();
+    console.log('Resolved chromium path:', real);
+    return real;
+  } catch (_) {}
+  try {
+    const real = require('child_process')
+      .execSync('readlink -f $(which chromium-browser)', { shell: true })
+      .toString().trim();
+    return real;
+  } catch (_) {}
   return undefined;
+}
 }
 const QRCode = require('qrcode');
 const { Agency, Agent, Property, Lead, Meeting, FAQ, Session, MessageLog } = require('./models');
