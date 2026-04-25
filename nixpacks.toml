@@ -1,8 +1,2 @@
 [phases.setup]
-aptPkgs = ["chromium-browser", "chromium-driver"]
-
-[phases.install]
-cmds = ["npm install"]
-
-[start]
-cmd = "npm start"
+aptPkgs = ["chromium-browser"]
