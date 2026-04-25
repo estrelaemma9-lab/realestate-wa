@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Super Admin — RealEstateAI</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:      #0d0f12;
+  --bg2:     #141720;
+  --bg3:     #1a1e28;
+  --bg4:     #222736;
+  --border:  #2a3045;
+  --accent:  #f59e0b;
+  --accent2: #ef4444;
+  --green:   #10b981;
+  --blue:    #3b82f6;
+  --text:    #f1f5f9;
+  --text2:   #94a3b8;
+  --text3:   #475569;
+  --radius:  10px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:15px;}
+body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* ── LOGIN ── */
+#login-page{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;
+  background:radial-gradient(ellipse at 30% 20%,rgba(245,158,11,.08) 0%,transparent 60%),
+             radial-gradient(ellipse at 70% 80%,rgba(239,68,68,.06) 0%,transparent 60%),
+             var(--bg);
+}
+.login-box{
+  width:360px;padding:40px;
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  box-shadow:0 24px 80px rgba(0,0,0,.5);
+}
+.login-icon{font-size:2.5rem;text-align:center;margin-bottom:12px;}
+.login-title{
+  font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700;
+  text-align:center;color:var(--accent);letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:4px;
+}
+.login-sub{text-align:center;color:var(--text3);font-size:.8rem;margin-bottom:28px;}
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:.75rem;font-weight:600;color:var(--text2);margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase;}
+.form-control{
+  width:100%;padding:10px 14px;
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;color:var(--text);font-size:.88rem;
+  font-family:'Outfit',sans-serif;outline:none;transition:border .15s;
+}
+.form-control:focus{border-color:var(--accent);}
+.form-control::placeholder{color:var(--text3);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;border:none;font-family:'Outfit',sans-serif;transition:all .15s;}
+.btn-full{width:100%;}
+.btn-accent{background:var(--accent);color:#000;}
+.btn-accent:hover{background:#d97706;}
+.btn-danger{background:var(--accent2);color:#fff;}
+.btn-danger:hover{background:#dc2626;}
+.btn-success{background:var(--green);color:#fff;}
+.btn-success:hover{background:#059669;}
+.btn-blue{background:var(--blue);color:#fff;}
+.btn-blue:hover{background:#2563eb;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--text);}
+.btn-sm{padding:5px 12px;font-size:.78rem;}
+
+/* ── DASHBOARD ── */
+#dashboard{display:none;}
+#topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 28px;background:var(--bg2);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+}
+.topbar-brand{display:flex;align-items:center;gap:12px;}
+.brand-icon{
+  width:36px;height:36px;background:var(--accent);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+}
+.brand-name{font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:700;color:var(--accent);letter-spacing:.06em;}
+.brand-sub{font-size:.72rem;color:var(--text3);}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.admin-badge{
+  padding:5px 12px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:20px;font-size:.75rem;font-family:'JetBrains Mono',monospace;
+  color:var(--accent);
+}
+
+#content{padding:28px;max-width:1400px;margin:0 auto;}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px;}
+.stat-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:18px 20px;position:relative;overflow:hidden;
+}
+.stat-card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--accent);opacity:.5;
+}
+.stat-card.green::after{background:var(--green);}
+.stat-card.blue::after{background:var(--blue);}
+.stat-card.red::after{background:var(--accent2);}
+.stat-card.purple::after{background:#8b5cf6;}
+.stat-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-weight:600;margin-bottom:8px;}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:700;color:var(--text);}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.search-box{
+  padding:8px 14px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;color:var(--text);font-size:.85rem;outline:none;width:240px;
+  font-family:'Outfit',sans-serif;transition:border .15s;
+}
+.search-box:focus{border-color:var(--accent);}
+.filter-select{
+  padding:8px 14px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;color:var(--text);font-size:.85rem;outline:none;
+  font-family:'Outfit',sans-serif;cursor:pointer;
+}
+
+/* ── TABLE ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.card-header{
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-title{font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:8px;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.83rem;}
+th{
+  text-align:left;padding:10px 14px;
+  color:var(--text3);font-size:.7rem;text-transform:uppercase;
+  letter-spacing:.07em;font-weight:600;
+  border-bottom:1px solid var(--border);
+  background:var(--bg3);font-family:'JetBrains Mono',monospace;
+}
+td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(245,158,11,.03);}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:.7rem;font-weight:600;font-family:'JetBrains Mono',monospace;}
+.badge-pending{background:rgba(245,158,11,.15);color:#fbbf24;}
+.badge-approved{background:rgba(16,185,129,.15);color:#34d399;}
+.badge-blocked{background:rgba(239,68,68,.15);color:#f87171;}
+.badge-paid{background:rgba(59,130,246,.15);color:#60a5fa;}
+.badge-trial{background:rgba(139,92,246,.15);color:#a78bfa;}
+.badge-basic{background:rgba(16,185,129,.15);color:#34d399;}
+.badge-pro{background:rgba(245,158,11,.15);color:#fbbf24;}
+.badge-expired{background:rgba(239,68,68,.15);color:#f87171;}
+
+/* ── MODAL ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:16px;width:100%;max-width:480px;
+  padding:28px;animation:modalIn .2s ease;
+}
+@keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:none}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.modal-title{font-weight:700;font-size:1rem;}
+.modal-close{background:none;border:none;color:var(--text3);font-size:1.4rem;cursor:pointer;}
+.modal-close:hover{color:var(--text);}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;right:24px;z-index:9999;pointer-events:none;}
+.toast-item{
+  background:var(--bg3);border:1px solid var(--border);border-radius:10px;
+  padding:12px 18px;margin-top:8px;font-size:.85rem;color:var(--text);
+  display:flex;align-items:center;gap:10px;min-width:220px;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+  animation:toastIn .3s ease,toastOut .3s ease 2.7s forwards;
+}
+.toast-item.success{border-left:3px solid var(--green);}
+.toast-item.error{border-left:3px solid var(--accent2);}
+.toast-item.warn{border-left:3px solid var(--accent);}
+@keyframes toastIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateX(30px)}}
+
+.empty{text-align:center;padding:48px;color:var(--text3);}
+.empty-icon{font-size:2.5rem;margin-bottom:10px;}
+.actions-cell{display:flex;gap:6px;flex-wrap:wrap;}
+.text-mono{font-family:'JetBrains Mono',monospace;}
+.text-sm{font-size:.78rem;}
+.text-muted{color:var(--text3);}
+.text-green{color:var(--green);}
+.text-red{color:var(--accent2);}
+.text-accent{color:var(--accent);}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+/* Expiry warning */
+.expiry-warn{color:#fbbf24;}
+.expiry-ok{color:var(--green);}
+.expiry-expired{color:var(--accent2);}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login-page">
+  <div class="login-box">
+    <div class="login-icon">🛡️</div>
+    <div class="login-title">Super Admin</div>
+    <div class="login-sub">RealEstateAI Control Panel</div>
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input class="form-control" id="sa-user" placeholder="superadmin" autocomplete="off"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-control" type="password" id="sa-pass" placeholder="••••••••"/>
+    </div>
+    <button class="btn btn-accent btn-full" onclick="doLogin()">Access Control Panel →</button>
+    <div id="login-error" style="color:#f87171;font-size:.8rem;text-align:center;margin-top:10px;display:none"></div>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ══ -->
+<div id="dashboard">
+  <div id="topbar">
+    <div class="topbar-brand">
+      <div class="brand-icon">🛡️</div>
+      <div>
+        <div class="brand-name">SUPER ADMIN</div>
+        <div class="brand-sub">RealEstateAI Control Panel</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="admin-badge" id="admin-name">superadmin</div>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div id="content">
+    <!-- Stats -->
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card"><div class="stat-label">Total Agencies</div><div class="stat-val" id="st-total">—</div></div>
+      <div class="stat-card green"><div class="stat-label">Approved</div><div class="stat-val" id="st-approved">—</div></div>
+      <div class="stat-card blue"><div class="stat-label">Paid</div><div class="stat-val" id="st-paid">—</div></div>
+      <div class="stat-card purple"><div class="stat-label">Pending</div><div class="stat-val" id="st-pending">—</div></div>
+      <div class="stat-card red"><div class="stat-label">Blocked</div><div class="stat-val" id="st-blocked">—</div></div>
+    </div>
+
+    <!-- Agencies Table -->
+    <div class="toolbar">
+      <input class="search-box" id="search-input" placeholder="Search agency name or phone..." oninput="filterTable()"/>
+      <select class="filter-select" id="status-filter" onchange="filterTable()">
+        <option value="">All Status</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="blocked">Blocked</option>
+        <option value="paid">Paid</option>
+        <option value="expired">Expired</option>
+      </select>
+      <select class="filter-select" id="plan-filter" onchange="filterTable()">
+        <option value="">All Plans</option>
+        <option value="trial">Trial</option>
+        <option value="basic">Basic</option>
+        <option value="pro">Pro</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="loadAll()" style="margin-left:auto">↻ Refresh</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🏢 Agencies <span id="agency-count" class="text-mono text-sm text-muted"></span></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Agency</th>
+              <th>Phone</th>
+              <th>City</th>
+              <th>Status</th>
+              <th>Plan</th>
+              <th>Payment</th>
+              <th>Expiry</th>
+              <th>Registered</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="agencies-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODALS ══ -->
+
+<!-- Approve Modal -->
+<div class="modal-overlay" id="approve-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">✅ Approve Agency</div>
+      <button class="modal-close" onclick="closeModal('approve-modal')">×</button>
+    </div>
+    <input type="hidden" id="am-id"/>
+    <div class="form-group">
+      <label class="form-label">Agency Name</label>
+      <input class="form-control" id="am-name" readonly style="opacity:.6"/>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Plan</label>
+        <select class="form-control filter-select" id="am-plan" style="width:100%">
+          <option value="trial">Trial</option>
+          <option value="basic" selected>Basic</option>
+          <option value="pro">Pro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Days</label>
+        <input class="form-control" type="number" id="am-days" value="30" min="1"/>
+      </div>
+    </div>
+    <button class="btn btn-success btn-full" onclick="approveAgency()">Approve & Activate</button>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-overlay" id="payment-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">💰 Mark Payment</div>
+      <button class="modal-close" onclick="closeModal('payment-modal')">×</button>
+    </div>
+    <input type="hidden" id="pm-id"/>
+    <div class="form-group">
+      <label class="form-label">Agency</label>
+      <input class="form-control" id="pm-name" readonly style="opacity:.6"/>
+    </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Amount (PKR)</label>
+        <input class="form-control" type="number" id="pm-amount" placeholder="5000"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Plan</label>
+        <select class="form-control filter-select" id="pm-plan" style="width:100%">
+          <option value="basic">Basic</option>
+          <option value="pro">Pro</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Payment Reference</label>
+      <input class="form-control" id="pm-ref" placeholder="TXN123456 / JazzCash ref..."/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Days to Add</label>
+      <input class="form-control" type="number" id="pm-days" value="30" min="1"/>
+    </div>
+    <button class="btn btn-accent btn-full" onclick="markPayment()">Confirm Payment ✓</button>
+  </div>
+</div>
+
+<!-- Extend Modal -->
+<div class="modal-overlay" id="extend-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📅 Extend Subscription</div>
+      <button class="modal-close" onclick="closeModal('extend-modal')">×</button>
+    </div>
+    <input type="hidden" id="em-id"/>
+    <div class="form-group">
+      <label class="form-label">Agency</label>
+      <input class="form-control" id="em-name" readonly style="opacity:.6"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Current Expiry</label>
+      <input class="form-control" id="em-expiry" readonly style="opacity:.6"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Add Days</label>
+      <input class="form-control" type="number" id="em-days" value="30" min="1"/>
+    </div>
+    <button class="btn btn-blue btn-full" onclick="extendSubscription()">Extend →</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+let SA = { user: '', pass: '' };
+let allAgencies = [];
+
+// ════════════════════════════════════════════════
+// API
+// ════════════════════════════════════════════════
+async function api(method, path, data) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-super-user': SA.user,
+    'x-super-pass': SA.pass
+  };
+  const opts = { method, headers };
+  if (data) opts.body = JSON.stringify(data);
+  const res  = await fetch('/api/super' + path, opts);
+  const json = await res.json();
+  if (!json.ok && json.msg) throw new Error(json.msg);
+  return json;
+}
+
+// ════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast-item ${type}`;
+  const icons = { success: '✓', error: '✕', warn: '⚠' };
+  el.innerHTML = `<span>${icons[type]||'•'}</span><span>${msg}</span>`;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+// ════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════
+async function doLogin() {
+  const user = document.getElementById('sa-user').value.trim();
+  const pass = document.getElementById('sa-pass').value;
+  if (!user || !pass) { showError('Fill all fields'); return; }
+  try {
+    SA = { user, pass };
+    await api('POST', '/login');
+    localStorage.setItem('sa_user', user);
+    localStorage.setItem('sa_pass', pass);
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('dashboard').style.display  = 'block';
+    document.getElementById('admin-name').textContent   = user;
+    loadAll();
+  } catch (e) {
+    showError(e.message);
+    SA = { user: '', pass: '' };
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+function doLogout() {
+  localStorage.removeItem('sa_user');
+  localStorage.removeItem('sa_pass');
+  SA = { user: '', pass: '' };
+  document.getElementById('dashboard').style.display  = 'none';
+  document.getElementById('login-page').style.display = 'flex';
+}
+
+// Auto login
+window.addEventListener('DOMContentLoaded', () => {
+  const u = localStorage.getItem('sa_user');
+  const p = localStorage.getItem('sa_pass');
+  if (u && p) {
+    document.getElementById('sa-user').value = u;
+    document.getElementById('sa-pass').value = p;
+    SA = { user: u, pass: p };
+    api('POST', '/login').then(() => {
+      document.getElementById('login-page').style.display = 'none';
+      document.getElementById('dashboard').style.display  = 'block';
+      document.getElementById('admin-name').textContent   = u;
+      loadAll();
+    }).catch(() => { SA = { user: '', pass: '' }; });
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('login-page').style.display !== 'none') doLogin();
+});
+
+// ════════════════════════════════════════════════
+// LOAD DATA
+// ════════════════════════════════════════════════
+async function loadAll() {
+  await Promise.all([loadStats(), loadAgencies()]);
+}
+
+async function loadStats() {
+  try {
+    const r = await api('GET', '/stats');
+    const s = r.stats;
+    document.getElementById('st-total').textContent    = s.total;
+    document.getElementById('st-approved').textContent = s.approved;
+    document.getElementById('st-paid').textContent     = s.paid;
+    document.getElementById('st-pending').textContent  = s.pending;
+    document.getElementById('st-blocked').textContent  = s.blocked;
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function loadAgencies() {
+  try {
+    const r = await api('GET', '/agencies');
+    allAgencies = r.agencies;
+    renderAgencies(allAgencies);
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════
+function filterTable() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const status = document.getElementById('status-filter').value;
+  const plan   = document.getElementById('plan-filter').value;
+
+  let filtered = allAgencies.filter(a => {
+    const matchSearch = !search || a.name.toLowerCase().includes(search) || a.phone.includes(search);
+    const now = new Date();
+    const isExpired = a.expiryDate && new Date(a.expiryDate) < now;
+
+    let matchStatus = true;
+    if (status === 'pending')  matchStatus = !a.isApproved;
+    if (status === 'approved') matchStatus = a.isApproved && !a.isBlocked;
+    if (status === 'blocked')  matchStatus = a.isBlocked;
+    if (status === 'paid')     matchStatus = a.isPaid;
+    if (status === 'expired')  matchStatus = isExpired;
+
+    const matchPlan = !plan || a.plan === plan;
+    return matchSearch && matchStatus && matchPlan;
+  });
+
+  renderAgencies(filtered);
+}
+
+function renderAgencies(list) {
+  document.getElementById('agency-count').textContent = `(${list.length})`;
+  const tbody = document.getElementById('agencies-tbody');
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty"><div class="empty-icon">🏢</div><p>No agencies found</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(a => {
+    const now     = new Date();
+    const expiry  = a.expiryDate ? new Date(a.expiryDate) : null;
+    const expired = expiry && expiry < now;
+    const daysLeft= expiry ? Math.ceil((expiry - now) / (1000*60*60*24)) : null;
+
+    let statusBadge = '';
+    if (a.isBlocked)       statusBadge = '<span class="badge badge-blocked">Blocked</span>';
+    else if (!a.isApproved)statusBadge = '<span class="badge badge-pending">Pending</span>';
+    else                   statusBadge = '<span class="badge badge-approved">Approved</span>';
+
+    const planBadge = `<span class="badge badge-${a.plan}">${a.plan}</span>`;
+
+    const paymentCell = a.isPaid
+      ? `<span class="text-green text-sm">✓ PKR ${(a.paymentAmount||0).toLocaleString()}<br><span class="text-muted text-sm">${a.paymentRef||''}</span></span>`
+      : `<span class="text-muted text-sm">—</span>`;
+
+    let expiryCell = '—';
+    if (expiry) {
+      if (expired) expiryCell = `<span class="expiry-expired">Expired<br>${fmtDate(a.expiryDate)}</span>`;
+      else if (daysLeft <= 7) expiryCell = `<span class="expiry-warn">${daysLeft}d left<br>${fmtDate(a.expiryDate)}</span>`;
+      else expiryCell = `<span class="expiry-ok">${daysLeft}d left<br>${fmtDate(a.expiryDate)}</span>`;
+    }
+
+    return `<tr>
+      <td><b style="color:var(--text)">${a.name}</b>${a.email ? `<br><span class="text-muted text-sm">${a.email}</span>` : ''}</td>
+      <td class="text-mono">${a.phone}</td>
+      <td class="text-sm">${a.city||'—'}</td>
+      <td>${statusBadge}</td>
+      <td>${planBadge}</td>
+      <td>${paymentCell}</td>
+      <td class="text-sm">${expiryCell}</td>
+      <td class="text-sm text-muted">${fmtDate(a.createdAt)}</td>
+      <td>
+        <div class="actions-cell">
+          ${!a.isApproved && !a.isBlocked ? `<button class="btn btn-success btn-sm" onclick='openApprove("${a._id}","${a.name}")'>Approve</button>` : ''}
+          <button class="btn btn-accent btn-sm" onclick='openPayment("${a._id}","${a.name}")'>Payment</button>
+          <button class="btn btn-blue btn-sm" onclick='openExtend("${a._id}","${a.name}","${a.expiryDate||""}")'>Extend</button>
+          ${!a.isBlocked ? `<button class="btn btn-danger btn-sm" onclick='blockAgency("${a._id}","${a.name}")'>Block</button>` : `<button class="btn btn-ghost btn-sm" onclick='unblockAgency("${a._id}","${a.name}")'>Unblock</button>`}
+          <button class="btn btn-ghost btn-sm" onclick='deleteAgency("${a._id}","${a.name}")' style="color:#f87171;border-color:#f87171">Del</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+// ACTIONS
+// ════════════════════════════════════════════════
+function openApprove(id, name) {
+  document.getElementById('am-id').value   = id;
+  document.getElementById('am-name').value = name;
+  openModal('approve-modal');
+}
+
+async function approveAgency() {
+  try {
+    const id   = document.getElementById('am-id').value;
+    const plan = document.getElementById('am-plan').value;
+    const days = document.getElementById('am-days').value;
+    await api('PATCH', `/agencies/${id}/approve`, { plan, days });
+    toast('Agency approved!');
+    closeModal('approve-modal');
+    loadAll();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function openPayment(id, name) {
+  document.getElementById('pm-id').value   = id;
+  document.getElementById('pm-name').value = name;
+  openModal('payment-modal');
+}
+
+async function markPayment() {
+  try {
+    const id     = document.getElementById('pm-id').value;
+    const amount = document.getElementById('pm-amount').value;
+    const ref    = document.getElementById('pm-ref').value;
+    const plan   = document.getElementById('pm-plan').value;
+    const days   = document.getElementById('pm-days').value;
+    if (!amount) { toast('Enter amount', 'warn'); return; }
+    await api('PATCH', `/agencies/${id}/payment`, { amount, ref, plan, days });
+    toast('Payment marked!');
+    closeModal('payment-modal');
+    loadAll();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function openExtend(id, name, expiry) {
+  document.getElementById('em-id').value     = id;
+  document.getElementById('em-name').value   = name;
+  document.getElementById('em-expiry').value = expiry ? fmtDate(expiry) : 'Not set';
+  openModal('extend-modal');
+}
+
+async function extendSubscription() {
+  try {
+    const id   = document.getElementById('em-id').value;
+    const days = document.getElementById('em-days').value;
+    await api('PATCH', `/agencies/${id}/extend`, { days });
+    toast('Subscription extended!');
+    closeModal('extend-modal');
+    loadAll();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function blockAgency(id, name) {
+  if (!confirm(`Block "${name}"? They won't be able to login.`)) return;
+  try {
+    await api('PATCH', `/agencies/${id}/block`);
+    toast(`${name} blocked`);
+    loadAll();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function unblockAgency(id, name) {
+  try {
+    await api('PATCH', `/agencies/${id}/unblock`);
+    toast(`${name} unblocked`);
+    loadAll();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function deleteAgency(id, name) {
+  if (!confirm(`DELETE "${name}" permanently?\n\nAll data will be lost!`)) return;
+  try {
+    await api('DELETE', `/agencies/${id}`);
+    toast(`${name} deleted`);
+    loadAll();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+});
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
+}
+</script>
+</body>
+</html>
