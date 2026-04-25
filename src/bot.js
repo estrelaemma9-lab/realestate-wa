@@ -1,25 +1,6 @@
 'use strict';
 
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
-const { execSync } = require('child_process');
-
-function getChromePath() {
-  try {
-    const real = require('child_process')
-      .execSync('readlink -f $(which chromium)', { shell: true })
-      .toString().trim();
-    console.log('Resolved chromium path:', real);
-    return real;
-  } catch (_) {}
-  try {
-    const real = require('child_process')
-      .execSync('readlink -f $(which chromium-browser)', { shell: true })
-      .toString().trim();
-    return real;
-  } catch (_) {}
-  return undefined;
-}
-}
 const QRCode = require('qrcode');
 const { Agency, Agent, Property, Lead, Meeting, FAQ, Session, MessageLog } = require('./models');
 const {
@@ -28,13 +9,20 @@ const {
   formatVisitReceipt, generateToken, getSellQuestion, getVisitQuestion, parseBudget
 } = require('./utils/engine');
 
-const clients      = new Map();
-const qrCodes      = new Map();
-const statuses     = new Map();
+// ──────────────────────────────────────────────
+// GLOBAL SESSION STORES
+// ──────────────────────────────────────────────
+const clients      = new Map();  // agencyId -> WhatsApp Client
+const qrCodes      = new Map();  // agencyId -> base64 QR
+const statuses     = new Map();  // agencyId -> status string
 
+// ──────────────────────────────────────────────
+// INITIALIZE / RESTART CLIENT FOR AN AGENCY
+// ──────────────────────────────────────────────
 async function initClient(agency) {
   const agencyId = agency._id.toString();
 
+  // Destroy existing if any
   if (clients.has(agencyId)) {
     try { await clients.get(agencyId).destroy(); } catch (_) {}
     clients.delete(agencyId);
@@ -43,14 +31,10 @@ async function initClient(agency) {
   statuses.set(agencyId, 'initializing');
   qrCodes.delete(agencyId);
 
-  const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH || getChromePath();
-  console.log(`[${agency.name}] Chrome path: ${chromePath}`);
-
   const client = new Client({
     authStrategy: new LocalAuth({ clientId: agencyId }),
     puppeteer: {
       headless: true,
-      executablePath: chromePath,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -105,7 +89,11 @@ async function initClient(agency) {
   return client;
 }
 
+// ──────────────────────────────────────────────
+// HANDLE INCOMING MESSAGE
+// ──────────────────────────────────────────────
 async function handleIncoming(client, msg, agency) {
+  // Skip group messages, non-text that isn't relevant
   if (msg.isGroupMsg) return;
   if (!msg.body && msg.type !== 'chat') return;
 
@@ -113,13 +101,19 @@ async function handleIncoming(client, msg, agency) {
   const body     = (msg.body || '').trim();
   const agencyId = agency._id;
 
+  // Log incoming message
   try {
-    await MessageLog.create({ agencyId, phone: rawPhone, direction: 'in', body, type: msg.type });
+    await MessageLog.create({
+      agencyId, phone: rawPhone, direction: 'in', body, type: msg.type
+    });
     await Agency.findByIdAndUpdate(agencyId, { $inc: { messageCount: 1 } });
   } catch (_) {}
 
+  // Get or create session
   let session = await Session.findOne({ agencyId, phone: rawPhone });
-  if (!session) session = await Session.create({ agencyId, phone: rawPhone });
+  if (!session) {
+    session = await Session.create({ agencyId, phone: rawPhone });
+  }
 
   const lang = detectLang(body) || session.lang || 'en';
   session.lang = lang;
@@ -135,10 +129,14 @@ async function handleIncoming(client, msg, agency) {
   }
 }
 
+// ──────────────────────────────────────────────
+// CORE MESSAGE PROCESSOR
+// ──────────────────────────────────────────────
 async function processMessage(client, msg, agency, session, body, rawPhone, lang) {
   const lower = body.toLowerCase().trim();
   const agencyId = agency._id;
 
+  // Global: 0 or "menu" → reset to main menu
   if (lower === '0' || lower === 'menu' || lower === 'مینو') {
     session.step = 'MENU';
     session.pending = {};
@@ -148,6 +146,7 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
     return;
   }
 
+  // FAQ check (before flow) - but not during visit/sell collection
   const collectingSteps = ['VISIT_NAME', 'VISIT_PHONE', 'VISIT_DATE', 'SELL_TYPE', 'SELL_AREA', 'SELL_LOCATION', 'SELL_PRICE', 'SELL_CNAME', 'SELL_CPHONE'];
   if (!collectingSteps.includes(session.step)) {
     const faqs = await FAQ.find({ agencyId, isActive: true });
@@ -160,6 +159,7 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
     }
   }
 
+  // Greeting → show menu
   if (session.step === 'START' || isGreeting(body)) {
     session.step = 'MENU';
     session.pending = {};
@@ -169,6 +169,7 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
     return;
   }
 
+  // ── MENU STEP ──
   if (session.step === 'MENU') {
     const choice = parseMenuChoice(lower);
     if (choice === 'buy' || choice === 'rent' || choice === 'commercial') {
@@ -207,10 +208,12 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
       await session.save();
       return;
     }
+    // Unrecognised
     await safeSend(client, msg.from, formatMainMenu(agency.name, lang));
     return;
   }
 
+  // ── FAQ LIST ──
   if (session.step === 'FAQ_LIST') {
     const faqIds = (session.pending && session.pending.faqs) || [];
     const num = parseInt(lower);
@@ -228,9 +231,12 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
     return;
   }
 
+  // ── ASK BUDGET ──
   if (session.step === 'ASK_BUDGET') {
     let maxPrice = null;
-    if (lower !== 'any' && lower !== 'کوئی بھی') maxPrice = parseBudget(body);
+    if (lower !== 'any' && lower !== 'کوئی بھی') {
+      maxPrice = parseBudget(body);
+    }
     session.pending.budget = maxPrice;
     session.pending.budgetText = body;
     session.step = 'ASK_AREA';
@@ -242,13 +248,20 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
     return;
   }
 
+  // ── ASK AREA ──
   if (session.step === 'ASK_AREA') {
     const area = (lower === 'any' || lower === 'کوئی بھی') ? null : body;
     session.pending.area = area;
     session.markModified('pending');
     await session.save();
 
-    const query = { agencyId, type: session.pending.type, isActive: true, isSold: false };
+    // Build query
+    const query = {
+      agencyId,
+      type: session.pending.type,
+      isActive: true,
+      isSold: false
+    };
     if (session.pending.budget) query.price = { $lte: session.pending.budget };
     if (area) query.$or = [
       { city:     { $regex: area, $options: 'i' } },
@@ -262,10 +275,12 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
     session.step = 'RESULTS';
     session.markModified('pending');
     await session.save();
+
     await safeSend(client, msg.from, formatPropertyList(props, lang, 0));
     return;
   }
 
+  // ── RESULTS ──
   if (session.step === 'RESULTS') {
     const results = session.pending.results || [];
     let page = session.pending.page || 0;
@@ -281,20 +296,26 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
     }
 
     const num = parseInt(lower);
-    const idx = (page * 5) + num - 1;
+    const startIdx = page * 5;
+    const idx = startIdx + num - 1;
 
     if (!isNaN(num) && num >= 1 && idx < results.length) {
-      const prop = await Property.findById(results[idx]);
+      const propId = results[idx];
+      const prop   = await Property.findById(propId);
       if (!prop) {
         await safeSend(client, msg.from, lang === 'ur' ? '❌ پراپرٹی نہیں ملی۔' : '❌ Property not found.');
         return;
       }
-      await Property.findByIdAndUpdate(results[idx], { $inc: { viewCount: 1 } });
-      session.pending.selectedProp = results[idx];
+
+      // Increment view count
+      await Property.findByIdAndUpdate(propId, { $inc: { viewCount: 1 } });
+
+      session.pending.selectedProp = propId;
       session.step = 'PROPERTY_DETAIL';
       session.markModified('pending');
       await session.save();
 
+      // SEND IMAGE FIRST (if available)
       const imgUrl = prop.mainImage;
       if (imgUrl) {
         try {
@@ -302,8 +323,11 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
           await client.sendMessage(msg.from, media, { caption: prop.title });
         } catch (imgErr) {
           console.error('Image send failed:', imgErr.message);
+          // Fallback: send text only
         }
       }
+
+      // Send property detail text
       await safeSend(client, msg.from, formatPropertyDetail(prop, lang));
       return;
     }
@@ -314,6 +338,7 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
     return;
   }
 
+  // ── PROPERTY DETAIL ──
   if (session.step === 'PROPERTY_DETAIL') {
     if (lower === '1' || lower === 'visit' || lower === 'وزٹ') {
       session.step = 'VISIT_NAME';
@@ -325,15 +350,15 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
     if (lower === '2' || lower === 'agent' || lower === 'ایجنٹ') {
       const agents = await Agent.find({ agencyId, isActive: true }).limit(3);
       if (agents.length === 0) {
-        const ag = await Agency.findById(agencyId);
+        const agency = await Agency.findById(agencyId);
         await safeSend(client, msg.from, lang === 'ur'
-          ? `📞 ہم سے رابطہ کریں:\n${ag.phone}\n\n0 - مین مینو`
-          : `📞 Contact us at:\n${ag.phone}\n\n0 - Main Menu`);
+          ? `📞 ہم سے رابطہ کریں:\n${agency.phone}\n\n0 - مین مینو`
+          : `📞 Contact us at:\n${agency.phone}\n\n0 - Main Menu`);
       } else {
         const lines = agents.map(a => `👤 *${a.name}*\n   📱 ${a.phone}${a.title ? '\n   🏷 ' + a.title : ''}`).join('\n\n');
-        await safeSend(client, msg.from, lang === 'ur'
+        await safeSend(client, msg.from, (lang === 'ur'
           ? `📋 *ہمارے ایجنٹس:*\n\n${lines}\n\n0 - مین مینو`
-          : `📋 *Our Agents:*\n\n${lines}\n\n0 - Main Menu`);
+          : `📋 *Our Agents:*\n\n${lines}\n\n0 - Main Menu`));
       }
       return;
     }
@@ -341,15 +366,19 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
       session.step = 'RESULTS';
       session.markModified('pending');
       await session.save();
-      const props = await Property.find({ _id: { $in: session.pending.results || [] } });
-      await safeSend(client, msg.from, formatPropertyList(props, lang, session.pending.page || 0));
+      const results = session.pending.results || [];
+      const page    = session.pending.page    || 0;
+      const props   = await Property.find({ _id: { $in: results } });
+      await safeSend(client, msg.from, formatPropertyList(props, lang, page));
       return;
     }
+    // Re-show detail
     const prop = await Property.findById(session.pending.selectedProp);
     if (prop) await safeSend(client, msg.from, formatPropertyDetail(prop, lang));
     return;
   }
 
+  // ── VISIT BOOKING ──
   if (session.step === 'VISIT_NAME') {
     session.pending.visitName = body;
     session.step = 'VISIT_PHONE';
@@ -369,38 +398,56 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
   }
 
   if (session.step === 'VISIT_DATE') {
-    const { visitName, visitPhone, selectedProp } = session.pending;
+    const { visitName, visitPhone, visitDate, selectedProp } = {
+      ...session.pending,
+      visitDate: body
+    };
+
     const token = generateToken();
 
+    // Create/Update Lead
     let lead = await Lead.findOne({ agencyId, phone: rawPhone });
     if (lead) {
-      lead.name = visitName || lead.name;
+      lead.name       = visitName || lead.name;
       lead.propertyId = selectedProp || lead.propertyId;
-      lead.status = lead.status === 'new' ? 'contacted' : lead.status;
-      lead.updatedAt = new Date();
+      lead.status     = lead.status === 'new' ? 'contacted' : lead.status;
+      lead.updatedAt  = new Date();
       await lead.save();
     } else {
       lead = await Lead.create({
-        agencyId, phone: rawPhone, name: visitName,
-        propertyId: selectedProp, type: session.pending.type || 'buy',
-        budget: session.pending.budgetText, area: session.pending.area, source: 'whatsapp'
+        agencyId,
+        phone:      rawPhone,
+        name:       visitName,
+        propertyId: selectedProp,
+        type:       session.pending.type || 'buy',
+        budget:     session.pending.budgetText,
+        area:       session.pending.area,
+        source:     'whatsapp'
       });
     }
 
+    // Create Meeting
     const meeting = await Meeting.create({
-      agencyId, propertyId: selectedProp, leadId: lead._id,
-      clientName: visitName, clientPhone: visitPhone,
-      date: body, token, status: 'scheduled'
+      agencyId,
+      propertyId:  selectedProp,
+      leadId:      lead._id,
+      clientName:  visitName,
+      clientPhone: visitPhone,
+      date:        body,
+      token,
+      status:      'scheduled'
     });
 
     session.step = 'MENU';
     session.pending = {};
     session.markModified('pending');
     await session.save();
+
     await safeSend(client, msg.from, formatVisitReceipt(meeting, lang));
     return;
   }
 
+  // ── SELL FLOW ──
   if (session.step === 'SELL_TYPE') {
     const typeMap = { '1': 'house', '2': 'apartment', '3': 'plot', '4': 'shop', '5': 'office', '6': 'other' };
     session.pending.sellType = typeMap[lower] || body;
@@ -449,21 +496,35 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
 
   if (session.step === 'SELL_CPHONE') {
     const { sellType, sellArea, sellLocation, sellPrice, sellCName } = session.pending;
+    const description = `Type: ${sellType}\nArea: ${sellArea}\nLocation: ${sellLocation}\nPrice: ${sellPrice}`;
+
     await Lead.create({
-      agencyId, phone: rawPhone, name: sellCName,
-      message: `Type: ${sellType}\nArea: ${sellArea}\nLocation: ${sellLocation}\nPrice: ${sellPrice}`,
-      type: 'sell', budget: sellPrice, area: sellArea, source: 'whatsapp'
+      agencyId,
+      phone:   rawPhone,
+      name:    sellCName,
+      message: description,
+      type:    'sell',
+      budget:  sellPrice,
+      area:    sellArea,
+      source:  'whatsapp'
     });
+
     session.step = 'MENU';
     session.pending = {};
     session.markModified('pending');
     await session.save();
+
     await safeSend(client, msg.from, lang === 'ur'
-      ? `✅ *آپ کی پراپرٹی رجسٹر ہو گئی!*\n\n🏠 قسم: ${sellType}\n📐 رقبہ: ${sellArea}\n📍 مقام: ${sellLocation}\n💰 قیمت: ${sellPrice}\n\nہمارا ایجنٹ جلد آپ سے رابطہ کرے گا۔\n\n0 - مین مینو`
-      : `✅ *Property Listing Received!*\n\n🏠 Type: ${sellType}\n📐 Area: ${sellArea}\n📍 Location: ${sellLocation}\n💰 Price: ${sellPrice}\n\nOur agent will contact you shortly.\n\n0 - Main Menu`);
+      ? `✅ *آپ کی پراپرٹی رجسٹر ہو گئی!*\n\n` +
+        `🏠 قسم: ${sellType}\n📐 رقبہ: ${sellArea}\n📍 مقام: ${sellLocation}\n💰 قیمت: ${sellPrice}\n\n` +
+        `ہمارا ایجنٹ جلد آپ سے رابطہ کرے گا۔\n\n0 - مین مینو`
+      : `✅ *Property Listing Received!*\n\n` +
+        `🏠 Type: ${sellType}\n📐 Area: ${sellArea}\n📍 Location: ${sellLocation}\n💰 Price: ${sellPrice}\n\n` +
+        `Our agent will contact you shortly.\n\n0 - Main Menu`);
     return;
   }
 
+  // ── FALLBACK ──
   session.step = 'MENU';
   session.pending = {};
   session.markModified('pending');
@@ -471,12 +532,15 @@ async function processMessage(client, msg, agency, session, body, rawPhone, lang
   await safeSend(client, msg.from, formatMainMenu(agency.name, lang));
 }
 
+// ──────────────────────────────────────────────
+// HELPERS
+// ──────────────────────────────────────────────
 function parseMenuChoice(lower) {
-  if (/^(1|buy|خریدنا|purchase)/.test(lower))          return 'buy';
-  if (/^(2|rent|کرایہ|rental)/.test(lower))            return 'rent';
-  if (/^(3|commercial|کمرشل|shop|office)/.test(lower)) return 'commercial';
-  if (/^(4|sell|بیچنا|list)/.test(lower))              return 'sell';
-  if (/^(5|faq|help|سوال|question)/.test(lower))       return 'faq';
+  if (/^(1|buy|خریدنا|buy|purchase)/.test(lower))       return 'buy';
+  if (/^(2|rent|کرایہ|rental)/.test(lower))             return 'rent';
+  if (/^(3|commercial|کمرشل|shop|office)/.test(lower))  return 'commercial';
+  if (/^(4|sell|بیچنا|list)/.test(lower))               return 'sell';
+  if (/^(5|faq|help|سوال|question)/.test(lower))        return 'faq';
   return null;
 }
 
@@ -493,6 +557,9 @@ async function safeSend(client, to, text) {
   }
 }
 
+// ──────────────────────────────────────────────
+// AUTO-START ALL ACTIVE AGENCY SESSIONS
+// ──────────────────────────────────────────────
 async function startAllSessions() {
   try {
     const agencies = await Agency.find({ isActive: true });
