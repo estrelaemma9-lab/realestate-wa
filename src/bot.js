@@ -16,8 +16,7 @@ const {
 function getChromePath() {
   // If env variable set — use it
   if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    console.log('Chrome from env:', process.env.PUPPETEER_EXECUTABLE_PATH);
-    return process.env.PUPPETEER_EXECUTABLE_PATH;
+   // ignore env path — use auto detect
   }
   // Check common paths
   const paths = [
