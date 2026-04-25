@@ -14,19 +14,15 @@ const {
 // CHROME PATH DETECTION
 // ──────────────────────────────────────────────
 function getChromePath() {
-  // If env variable set — use it
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-   // ignore env path — use auto detect
-  }
-  // Check common paths
+  const fs = require('fs');
   const paths = [
+    '/root/.cache/puppeteer/chrome/linux-146.0.7680.31/chrome-linux64/chrome',
+    '/app/.cache/puppeteer/chrome/linux-146.0.7680.31/chrome-linux64/chrome',
     '/usr/bin/chromium-browser',
     '/usr/bin/chromium',
     '/usr/bin/google-chrome-stable',
     '/usr/bin/google-chrome',
-    '/snap/bin/chromium',
-    '/run/current-system/sw/bin/chromium',
-    '/nix/var/nix/profiles/default/bin/chromium'
+    '/snap/bin/chromium'
   ];
   for (const p of paths) {
     if (fs.existsSync(p)) {
@@ -34,7 +30,14 @@ function getChromePath() {
       return p;
     }
   }
-  console.log('Chrome not found — using default');
+  // Try puppeteer default
+  try {
+    const puppeteer = require('puppeteer');
+    const path = puppeteer.executablePath();
+    console.log('Puppeteer default path:', path);
+    return path;
+  } catch(_) {}
+  console.log('Chrome not found!');
   return undefined;
 }
 
