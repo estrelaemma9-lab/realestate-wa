@@ -1,6 +1,7 @@
 {
   "name": "realestateai-wa",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "Multi-tenant Real Estate WhatsApp Bot with Admin Dashboard",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -16,10 +17,12 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.6.3",
     "multer": "^1.4.5-lts.1",
     "multer-storage-cloudinary": "^4.0.0",
+    "nodemailer": "^6.9.7",
     "qrcode": "^1.5.3",
     "uuid": "^9.0.0",
     "whatsapp-web.js": "^1.23.0"
