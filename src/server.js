@@ -768,6 +768,9 @@ app.get('/api/messages/contacts', authMiddleware, async (req, res) => {
 // ══════════════════════════════════════════════
 // SERVE DASHBOARD
 // ══════════════════════════════════════════════
+app.get('/superadmin', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/superadmin.html'));
+});
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
