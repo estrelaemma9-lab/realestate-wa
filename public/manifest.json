@@ -1,0 +1,40 @@
+{
+  "name": "RealEstateAI",
+  "short_name": "RE-AI",
+  "description": "Real Estate WhatsApp Bot Dashboard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a73e8",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192/1a73e8/ffffff?text=RE",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://via.placeholder.com/512x512/1a73e8/ffffff?text=RE",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Properties",
+      "short_name": "Props",
+      "url": "/?tab=properties",
+      "description": "View all properties"
+    },
+    {
+      "name": "Leads",
+      "short_name": "Leads",
+      "url": "/?tab=leads",
+      "description": "View all leads"
+    }
+  ]
+}

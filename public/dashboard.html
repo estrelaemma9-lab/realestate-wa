@@ -4,6 +4,13 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>RealEstateAI — Dashboard</title>
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#1a73e8"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="RealEstateAI"/>
+<link rel="apple-touch-icon" href="https://via.placeholder.com/192x192/1a73e8/ffffff?text=RE"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -609,6 +616,9 @@ hr.divider   { border:none; border-top:1px solid var(--border); margin:16px 0; }
   <main id="main">
     <div id="topbar">
       <div class="topbar-title" id="topbar-title">Overview</div>
+<button id="install-btn" onclick="installPWA()" class="btn btn-primary btn-sm" style="display:none;margin-left:10px">
+  📲 Install App
+</button>
       <div class="topbar-right">
         <div class="status-pill">
           <span class="status-dot" id="wa-top-dot"></span>
@@ -1633,6 +1643,35 @@ if (uz) {
     uploadImages({target:fi});
   });
 }
+// PWA Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered'))
+      .catch(err => console.log('SW error:', err));
+  });
+}
+
+// PWA Install Prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const btn = document.getElementById('install-btn');
+  if (btn) btn.style.display = 'flex';
+});
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      const btn = document.getElementById('install-btn');
+      if (btn) btn.style.display = 'none';
+    });
+  }
+}
+
 </script>
 </body>
 </html>
